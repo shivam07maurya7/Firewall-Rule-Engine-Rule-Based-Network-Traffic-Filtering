@@ -261,9 +261,12 @@
     <section id="activity" class="activity-section" aria-labelledby="activity-heading">
       <div class="section-heading">
         <h2 id="activity-heading">Session activity</h2>
-        <button id="clear-activity" type="button" disabled>Clear activity</button>
+        <div class="tools">
+          <button id="export-activity" type="button" disabled>Export CSV</button>
+          <button id="clear-activity" type="button" disabled>Clear activity</button>
+        </div>
       </div>
-      <p class="help">Shows your latest 12 individual packet tests. Sample batches are shown in the Samples table.</p>
+      <p class="help">Shows your latest 12 individual packet tests. Export CSV to save these results. Batch results stay in the Samples table.</p>
       <div class="table-scroll" tabindex="0" role="region" aria-label="Recent packet tests">
         <table class="activity-table">
           <thead><tr><th scope="col">Time</th><th scope="col">Source IP</th><th scope="col">Destination IP</th><th scope="col">Protocol / port</th><th scope="col">Decision</th><th scope="col">Rule</th></tr></thead>
@@ -416,6 +419,7 @@
     const policyStatus = document.querySelector('#policy-status');
     const activityRows = document.querySelector('#activity-rows');
     const clearActivityButton = document.querySelector('#clear-activity');
+    const exportActivityButton = document.querySelector('#export-activity');
 
     function renderMetrics() {
       document.querySelector('#active-count').textContent = rules.filter(rule => rule.enabled).length;
@@ -427,6 +431,7 @@
 
     function renderActivity() {
       clearActivityButton.disabled = activity.length === 0;
+      exportActivityButton.disabled = activity.length === 0;
       activityRows.replaceChildren();
       if (!activity.length) {
         const cell = activityRows.insertRow().insertCell();
@@ -471,6 +476,26 @@
       policyStatus.dataset.error = isError;
     }
 
+    function downloadFile(content, name, mimeType) {
+      const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
+      const download = document.createElement('a');
+      download.href = url;
+      download.download = name;
+      document.body.append(download);
+      download.click();
+      download.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    exportActivityButton.addEventListener('click', () => {
+      const rows = [['Time', 'Source IP', 'Destination IP', 'Protocol', 'Destination port', 'Decision', 'Rule']];
+      for (const { time, packet, result } of activity) {
+        rows.push([time, packet.source.trim(), packet.destination.trim(), packet.protocol, packet.port.trim(), result.action, result.id]);
+      }
+      const csv = rows.map(row => row.map(value => '"' + value.replaceAll('"', '""') + '"').join(',')).join('\r\n') + '\r\n';
+      downloadFile(csv, 'firewall-packet-tests.csv', 'text/csv;charset=utf-8');
+    });
+
     document.querySelector('#import-policy').addEventListener('click', () => policyFile.click());
     policyFile.addEventListener('change', async () => {
       const file = policyFile.files[0];
@@ -495,14 +520,7 @@
       showPolicyStatus('');
       if (!readRules(true)) return;
       const content = JSON.stringify({ version: 1, rules }, null, 2) + '\n';
-      const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
-      const download = document.createElement('a');
-      download.href = url;
-      download.download = 'firewall-rules.json';
-      document.body.append(download);
-      download.click();
-      download.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      downloadFile(content, 'firewall-rules.json', 'application/json');
       showPolicyStatus('Exported firewall-rules.json.');
     });
     clearActivityButton.addEventListener('click', clearActivity);
