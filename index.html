@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Firewall Rule Engine | Advanced</title>
+  <title>Firewall Rule Engine</title>
   <style>
     :root {
       color-scheme: light;
@@ -95,133 +95,37 @@
       .workspace { gap: .8rem; }
       .sample-section { margin-top: .8rem; }
     }
-    :root {
-      color-scheme: dark;
-      --ink: #e9f0f7;
-      --muted: #a5b6c7;
-      --line: #293c50;
-      --soft: #162538;
-      --blue: #65dfc4;
-      --blue-hover: #90eedb;
-      --panel: #101d2c;
-      --green: #79e9a6;
-      --red: #ff9e9a;
-      --amber: #f1c989;
-    }
-    body { background: #0a1420; }
-    .wrap { width: min(100% - 3rem, 88rem); }
-    .page-header { background: #0e1a29; border-top: 0; padding: .85rem 0; }
-    .brand { display: flex; align-items: center; gap: .75rem; font-weight: 700; }
-    .brand-mark { min-width: 2.25rem; padding: .4rem; border-radius: .5rem; background: #173b40; color: var(--blue); font: 700 .82rem/1.2 ui-monospace, monospace; text-align: center; }
-    .header-inner { gap: .75rem; }
-    .nav { display: flex; flex-wrap: wrap; gap: .5rem 1.15rem; }
-    .nav a { color: var(--muted); text-decoration: none; font-weight: 600; font-size: .875rem; }
-    .nav a:hover { color: var(--blue); }
-    .hero { position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: end; gap: 2rem; padding: 2rem clamp(1rem, 4vw, 2.6rem); background: linear-gradient(108deg, #172b41 10%, #102539 55%, #133d42); border-color: #325166; border-radius: .9rem; }
-    .hero::before { content: ''; position: absolute; inset: 0 0 0 45%; pointer-events: none; background-image: linear-gradient(#7cd4cf22 1px, transparent 1px), linear-gradient(90deg, #7cd4cf22 1px, transparent 1px); background-size: 25px 25px; mask-image: linear-gradient(90deg, transparent, black); }
-    .hero > * { position: relative; }
-    .hero h1 { margin-bottom: .65rem; font-size: clamp(2rem, 5.2vw, 3.45rem); letter-spacing: -.055em; }
-    .hero p { color: #c3d6e2; margin-bottom: 0; max-width: 39rem; }
-    .hero-spec { display: grid; gap: .55rem; min-width: 13rem; margin: 0; }
-    .hero-spec div { display: flex; justify-content: space-between; gap: 1rem; padding-bottom: .35rem; border-bottom: 1px solid #75c4c249; }
-    .hero-spec dt { color: #bad5df; font-size: .875rem; }
-    .hero-spec dd { margin: 0; color: #e8fffa; font-size: .875rem; font-weight: 650; }
-    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0 1.25rem; }
-    .metrics > div { padding: .9rem 1rem; border: 1px solid var(--line); border-radius: .65rem; background: var(--panel); }
-    .metrics dt { color: var(--muted); font-size: .875rem; }
-    .metrics dd { margin: .15rem 0 0; font-weight: 700; font-size: 1.65rem; font-variant-numeric: tabular-nums; }
-    .metrics #allowed-count { color: var(--green); }
-    .metrics #denied-count { color: var(--red); }
-    .workspace { grid-template-columns: minmax(0, 2.05fr) minmax(0, 1fr); gap: 1rem; }
-    section { background: var(--panel); border-radius: .7rem; padding: 1.15rem; scroll-margin-top: 1rem; }
-    .section-heading { flex-wrap: wrap; }
-    .tools { display: flex; flex-wrap: wrap; gap: .4rem; }
-    button { background: #172639; border-color: #3c5368; color: #d9e8f4; border-radius: .4rem; }
-    button:hover:not(:disabled) { background: #223a50; }
-    button.primary { color: #092923; }
-    button.primary:hover:not(:disabled) { background: var(--blue-hover); }
-    button:disabled { color: #8b9bad; background: #142134; }
-    input, select { background-color: #0c1725; border-color: #3c5368; border-radius: .4rem; }
-    input[type='checkbox'] { display: block; width: 1rem; height: 1rem; min-height: auto; accent-color: var(--blue); }
-    .rule-table { min-width: 45.5rem; }
-    .rule-table tr[data-enabled='false'] th { color: #91a1b0; }
-    thead th { color: #b7c8d8; }
-    .row-actions [data-action='remove'], .feedback { color: var(--red); }
-    .allow { color: var(--green); background: #16382d; }
-    .deny { color: var(--red); background: #3d242b; }
-    .sample-result[data-state='pass'] { color: var(--green); }
-    .sample-result[data-state='changed'] { color: var(--amber); }
-    .policy-status { margin: .55rem 0 0; font-size: .875rem; color: var(--blue); }
-    .policy-status[data-error='true'] { color: var(--red); }
-    .policy-status:empty { display: none; }
-    #packet-form button { width: 100%; }
-    .activity-section { margin-top: 1rem; }
-    .activity-table { min-width: 34rem; }
-    .activity-table .result-label { white-space: nowrap; }
-    .sample-section { margin-top: 1rem; }
-    @media (max-width: 76rem) { .workspace { grid-template-columns: minmax(0, 1fr); } }
-    @media (max-width: 48rem) {
-      .hero { align-items: start; flex-direction: column; gap: 1rem; }
-      .hero-spec { width: min(100%, 20rem); }
-      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    @media (max-width: 40rem) { .wrap { width: calc(100% - 1rem); } section { padding: .85rem; } }
-    @media print { .nav, .tools, #reset { display: none; } }
-
   </style>
 </head>
 <body>
   <header class="page-header">
     <div class="wrap header-inner">
-      <div class="brand"><span class="brand-mark" aria-hidden="true">FW</span> Firewall Lab</div>
-      <nav class="nav" aria-label="Dashboard sections">
-        <a href="#rules">Rules</a><a href="#packet">Packet tester</a><a href="#samples">Samples</a><a href="#activity">Activity</a>
-      </nav>
+      <div>
+        <h1>Firewall Rule Engine</h1>
+        <p>Offline simulator for IPv4 packet filtering.</p>
+      </div>
       <button id="reset" type="button">Reset demo</button>
     </div>
   </header>
 
   <main class="wrap">
-    <section class="hero" aria-labelledby="page-title">
-      <div>
-        <h1 id="page-title">Firewall Rule Engine</h1>
-        <p>Build an IPv4 policy, test it against sample packets, and see exactly which rule made the decision.</p>
-      </div>
-      <dl class="hero-spec">
-        <div><dt>Evaluation</dt><dd>First match</dd></div>
-        <div><dt>Default policy</dt><dd>Deny</dd></div>
-        <div><dt>Mode</dt><dd>Offline simulation</dd></div>
-      </dl>
-    </section>
-    <dl class="metrics" aria-label="Policy and session statistics">
-      <div><dt>Active rules</dt><dd id="active-count">0</dd></div>
-      <div><dt>Packets tested</dt><dd id="tested-count">0</dd></div>
-      <div><dt>Allowed</dt><dd id="allowed-count">0</dd></div>
-      <div><dt>Denied</dt><dd id="denied-count">0</dd></div>
-    </dl>
     <div class="workspace">
-      <section id="rules" aria-labelledby="rules-heading">
+      <section aria-labelledby="rules-heading">
         <div class="section-heading">
           <h2 id="rules-heading">Rule order</h2>
-          <div class="tools">
-            <button id="import-policy" type="button">Import JSON</button>
-            <button id="export-policy" type="button">Export JSON</button>
-            <button id="add-rule" class="primary" type="button">Add rule</button>
-            <input id="policy-file" type="file" accept="application/json,.json" aria-label="Import a ruleset file" hidden>
-          </div>
+          <button id="add-rule" type="button">Add rule</button>
         </div>
-        <p class="help" id="rule-help">Enabled rules run from top to bottom. Uncheck a rule to skip it without removing it. Export your rules to keep a copy.</p>
+        <p class="help" id="rule-help">Rules run from top to bottom. The first match wins. If no rule matches, the engine denies the packet.</p>
         <div class="table-scroll" tabindex="0" role="region" aria-label="Editable firewall rules">
           <table class="rule-table" aria-describedby="rule-help">
-            <thead><tr><th scope="col">ID</th><th scope="col">On</th><th scope="col">Action</th><th scope="col">Source CIDR</th><th scope="col">Destination CIDR</th><th scope="col">Protocol</th><th scope="col">Port</th><th scope="col">Edit order</th></tr></thead>
+            <thead><tr><th scope="col">ID</th><th scope="col">Action</th><th scope="col">Source CIDR</th><th scope="col">Destination CIDR</th><th scope="col">Protocol</th><th scope="col">Port</th><th scope="col">Edit order</th></tr></thead>
             <tbody id="rule-rows"></tbody>
           </table>
         </div>
         <p id="rule-error" class="feedback" role="status"></p>
-        <p id="policy-status" class="policy-status" role="status"></p>
       </section>
 
-      <section id="packet" aria-labelledby="packet-heading">
+      <section aria-labelledby="packet-heading">
         <div class="section-heading"><h2 id="packet-heading">Test a packet</h2></div>
         <form id="packet-form" novalidate>
           <div class="packet-fields">
@@ -244,7 +148,7 @@
       </section>
     </div>
 
-    <section id="samples" class="sample-section" aria-labelledby="samples-heading">
+    <section class="sample-section" aria-labelledby="samples-heading">
       <div class="section-heading">
         <h2 id="samples-heading">Sample packets</h2>
         <button id="run-samples" type="button">Run all samples</button>
@@ -258,29 +162,12 @@
       </div>
       <p class="help" id="sample-summary" role="status" hidden></p>
     </section>
-    <section id="activity" class="activity-section" aria-labelledby="activity-heading">
-      <div class="section-heading">
-        <h2 id="activity-heading">Session activity</h2>
-        <div class="tools">
-          <button id="export-activity" type="button" disabled>Export CSV</button>
-          <button id="clear-activity" type="button" disabled>Clear activity</button>
-        </div>
-      </div>
-      <p class="help">Shows your latest 12 individual packet tests. Export CSV to save these results. Batch results stay in the Samples table.</p>
-      <div class="table-scroll" tabindex="0" role="region" aria-label="Recent packet tests">
-        <table class="activity-table">
-          <thead><tr><th scope="col">Time</th><th scope="col">Source IP</th><th scope="col">Destination IP</th><th scope="col">Protocol / port</th><th scope="col">Decision</th><th scope="col">Rule</th></tr></thead>
-          <tbody id="activity-rows"><tr><td class="empty" colspan="6">No packet tests recorded yet.</td></tr></tbody>
-        </table>
-      </div>
-    </section>
     <noscript><p>Enable JavaScript to run the simulator.</p></noscript>
   </main>
 
   <template id="rule-template">
     <tr>
       <th scope="row" data-rule-id></th>
-      <td><input type="checkbox" data-field="enabled"></td>
       <td><select data-field="action"><option>ALLOW</option><option>DENY</option></select></td>
       <td><input class="cidr address" data-field="source" autocomplete="off" spellcheck="false"></td>
       <td><input class="cidr address" data-field="destination" autocomplete="off" spellcheck="false"></td>
@@ -305,27 +192,6 @@
       { name: 'Different host', source: '10.0.2.25', destination: '192.0.2.11', protocol: 'TCP', port: '443', expected: 'DENY (DEFAULT)' },
       { name: 'Invalid port', source: '10.0.2.25', destination: '192.0.2.10', protocol: 'TCP', port: '70000', expected: 'Input error' },
     ];
-
-    function parsePolicy(text) {
-      const policy = JSON.parse(text);
-      if (policy?.version !== 1 || !Array.isArray(policy.rules) || policy.rules.length > 200) {
-        throw new Error('Choose a version 1 ruleset with up to 200 rules.');
-      }
-      const ids = new Set();
-      const imported = policy.rules.map(rule => {
-        if (!rule || typeof rule.id !== 'string' || !/^R[1-9]\d{0,5}$/.test(rule.id) || ids.has(rule.id) ||
-          !['ALLOW', 'DENY'].includes(rule.action) || !['TCP', 'UDP'].includes(rule.protocol) ||
-          !['source', 'destination', 'port'].every(key => typeof rule[key] === 'string') || typeof rule.enabled !== 'boolean') {
-          throw new Error('Each rule needs a unique ID, action, protocol, CIDR ranges, port and enabled state.');
-        }
-        ids.add(rule.id);
-        const { id, action, protocol, source, destination, port, enabled } = rule;
-        return { id, action, protocol, source, destination, port, enabled };
-      });
-      const { error } = compileRules(imported);
-      if (error) throw new Error(error.id + ' ' + error.message);
-      return imported;
-    }
 
     function parseIp(value) {
       const octets = value.trim().split('.');
@@ -377,10 +243,6 @@
 
       const trace = [];
       for (const rule of entries) {
-        if (rule.enabled === false) {
-          trace.push(rule.id + ' skipped (disabled).');
-          continue;
-        }
         const mismatches = [];
         if (source < rule.source.start || source > rule.source.end) mismatches.push('source IP');
         if (destination < rule.destination.start || destination > rule.destination.end) mismatches.push('destination IP');
@@ -409,133 +271,19 @@
     const traceRows = document.querySelector('#trace-rows');
     const sampleRows = document.querySelector('#sample-rows');
     const sampleSummary = document.querySelector('#sample-summary');
-    const ruleLabels = { enabled: 'enabled', action: 'action', source: 'source CIDR', destination: 'destination CIDR', protocol: 'protocol', port: 'destination port' };
+    const ruleLabels = { action: 'action', source: 'source CIDR', destination: 'destination CIDR', protocol: 'protocol', port: 'destination port' };
     let rules = [];
     let nextRuleId = 4;
-    const activity = [];
-    let allowed = 0;
-    let denied = 0;
-    const policyFile = document.querySelector('#policy-file');
-    const policyStatus = document.querySelector('#policy-status');
-    const activityRows = document.querySelector('#activity-rows');
-    const clearActivityButton = document.querySelector('#clear-activity');
-    const exportActivityButton = document.querySelector('#export-activity');
-
-    function renderMetrics() {
-      document.querySelector('#active-count').textContent = rules.filter(rule => rule.enabled).length;
-      document.querySelector('#tested-count').textContent = allowed + denied;
-      document.querySelector('#allowed-count').textContent = allowed;
-      document.querySelector('#denied-count').textContent = denied;
-      addRule.disabled = rules.length >= 200;
-    }
-
-    function renderActivity() {
-      clearActivityButton.disabled = activity.length === 0;
-      exportActivityButton.disabled = activity.length === 0;
-      activityRows.replaceChildren();
-      if (!activity.length) {
-        const cell = activityRows.insertRow().insertCell();
-        cell.colSpan = 6;
-        cell.className = 'empty';
-        cell.textContent = 'No packet tests recorded yet.';
-        return;
-      }
-      for (const { time, packet, result } of activity) {
-        const row = activityRows.insertRow();
-        for (const value of [time, packet.source.trim(), packet.destination.trim(), packet.protocol + ' / ' + packet.port.trim()]) {
-          row.insertCell().textContent = value;
-        }
-        const label = document.createElement('span');
-        label.className = 'result-label ' + result.action.toLowerCase();
-        label.textContent = result.action;
-        row.insertCell().append(label);
-        row.insertCell().textContent = result.id;
-      }
-    }
-
-    function recordPacket(packet, result) {
-      if (result.action === 'ALLOW') allowed++;
-      else denied++;
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      activity.unshift({ time, packet, result });
-      if (activity.length > 12) activity.pop();
-      renderActivity();
-      renderMetrics();
-    }
-
-    function clearActivity() {
-      activity.length = 0;
-      allowed = 0;
-      denied = 0;
-      renderActivity();
-      renderMetrics();
-    }
-
-    function showPolicyStatus(message, isError = false) {
-      policyStatus.textContent = message;
-      policyStatus.dataset.error = isError;
-    }
-
-    function downloadFile(content, name, mimeType) {
-      const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
-      const download = document.createElement('a');
-      download.href = url;
-      download.download = name;
-      document.body.append(download);
-      download.click();
-      download.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
-
-    exportActivityButton.addEventListener('click', () => {
-      const rows = [['Time', 'Source IP', 'Destination IP', 'Protocol', 'Destination port', 'Decision', 'Rule']];
-      for (const { time, packet, result } of activity) {
-        rows.push([time, packet.source.trim(), packet.destination.trim(), packet.protocol, packet.port.trim(), result.action, result.id]);
-      }
-      const csv = rows.map(row => row.map(value => '"' + value.replaceAll('"', '""') + '"').join(',')).join('\r\n') + '\r\n';
-      downloadFile(csv, 'firewall-packet-tests.csv', 'text/csv;charset=utf-8');
-    });
-
-    document.querySelector('#import-policy').addEventListener('click', () => policyFile.click());
-    policyFile.addEventListener('change', async () => {
-      const file = policyFile.files[0];
-      if (!file) return;
-      try {
-        if (file.size > 262144) throw new Error('Choose a JSON file smaller than 256 KB.');
-        const imported = parsePolicy(await file.text());
-        rules = imported;
-        nextRuleId = 4;
-        renderRules();
-        ruleChanged();
-        showPolicyStatus('Imported ' + rules.length + (rules.length === 1 ? ' rule.' : ' rules.'));
-      } catch (error) {
-        const message = error instanceof SyntaxError ? 'The selected file is not valid JSON.' : error.message;
-        showPolicyStatus(message, true);
-      } finally {
-        policyFile.value = '';
-      }
-    });
-
-    document.querySelector('#export-policy').addEventListener('click', () => {
-      showPolicyStatus('');
-      if (!readRules(true)) return;
-      const content = JSON.stringify({ version: 1, rules }, null, 2) + '\n';
-      downloadFile(content, 'firewall-rules.json', 'application/json');
-      showPolicyStatus('Exported firewall-rules.json.');
-    });
-    clearActivityButton.addEventListener('click', clearActivity);
 
     function renderRules() {
       ruleRows.replaceChildren();
       rules.forEach((rule, index) => {
         const row = ruleTemplate.content.firstElementChild.cloneNode(true);
         row.dataset.rule = rule.id;
-        row.dataset.enabled = rule.enabled;
         row.querySelector('[data-rule-id]').textContent = rule.id;
         for (const control of row.querySelectorAll('[data-field]')) {
           const field = control.dataset.field;
-          if (field === 'enabled') control.checked = rule.enabled;
-          else control.value = rule[field];
+          control.value = rule[field];
           control.setAttribute('aria-label', `${rule.id} ${ruleLabels[field]}`);
         }
         for (const button of row.querySelectorAll('[data-action]')) {
@@ -547,7 +295,7 @@
       });
       if (rules.length === 0) {
         const cell = ruleRows.insertRow().insertCell();
-        cell.colSpan = 8;
+        cell.colSpan = 7;
         cell.className = 'empty';
         cell.textContent = 'No rules. All valid packets receive the default deny decision.';
       }
@@ -587,8 +335,7 @@
         return;
       }
 
-      const packet = Object.fromEntries(new FormData(packetForm));
-      const result = evaluate(packet, entries);
+      const result = evaluate(Object.fromEntries(new FormData(packetForm)), entries);
       if (result.error) {
         const control = packetForm.elements.namedItem(result.field);
         control.setAttribute('aria-invalid', 'true');
@@ -609,7 +356,6 @@
         traceRows.append(entry);
       }
       trace.hidden = false;
-      if (focusInvalid) recordPacket(packet, result);
     }
 
     function renderSamples() {
@@ -653,8 +399,6 @@
     }
 
     function ruleChanged() {
-      showPolicyStatus('');
-      renderMetrics();
       clearRuleError();
       clearPacketDecision('Rules changed. Evaluate the packet again.');
       clearSampleResults();
@@ -664,9 +408,7 @@
       const control = event.target.closest('[data-field]');
       if (!control) return;
       const rule = rules.find(entry => entry.id === control.closest('tr').dataset.rule);
-      const field = control.dataset.field;
-      rule[field] = field === 'enabled' ? control.checked : control.value;
-      if (field === 'enabled') control.closest('tr').dataset.enabled = control.checked;
+      rule[control.dataset.field] = control.value;
       ruleChanged();
     });
 
@@ -688,9 +430,8 @@
     });
 
     addRule.addEventListener('click', () => {
-      while (rules.some(rule => rule.id === `R${nextRuleId}`)) nextRuleId++;
       const id = `R${nextRuleId++}`;
-      rules.push({ id, enabled: true, action: 'DENY', source: '0.0.0.0/0', destination: '0.0.0.0/0', protocol: 'TCP', port: '443' });
+      rules.push({ id, action: 'DENY', source: '0.0.0.0/0', destination: '0.0.0.0/0', protocol: 'TCP', port: '443' });
       renderRules();
       ruleChanged();
       ruleRows.querySelector(`[data-rule="${id}"] [data-field="source"]`).focus();
@@ -730,9 +471,7 @@
     });
 
     function resetDemo() {
-      rules = originalRules.map(rule => ({ ...rule, enabled: true }));
-      showPolicyStatus('');
-      clearActivity();
+      rules = originalRules.map(rule => ({ ...rule }));
       nextRuleId = 4;
       renderRules();
       clearSampleResults();
