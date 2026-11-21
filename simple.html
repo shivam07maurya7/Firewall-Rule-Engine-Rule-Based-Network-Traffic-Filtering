@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Firewall Rule Engine</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202a33;
+      --muted: #52616c;
+      --line: #cdd5db;
+      --soft: #eff3f5;
+      --blue: #204865;
+      --blue-hover: #17384f;
+      font: 100%/1.5 system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #f5f7f8; color: var(--ink); }
+    .wrap { width: min(100% - 2.5rem, 73rem); margin-inline: auto; }
+    .page-header { background: #fff; border-bottom: 1px solid var(--line); border-top: 4px solid var(--blue); padding: 1.7rem 0 1.5rem; }
+    .page-header p { margin: .25rem 0 0; color: var(--muted); }
+    .header-inner, .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: .25rem; font-size: clamp(1.75rem, 4vw, 2.35rem); line-height: 1.15; font-weight: 700; }
+    h2 { margin-bottom: 0; font-size: 1.25rem; line-height: 1.25; }
+    h3 { margin-bottom: .25rem; font-size: .95rem; }
+    main { padding-block: 1.5rem 2.5rem; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+    section { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 1.1rem; }
+    .section-heading { margin-bottom: .65rem; }
+    .help { color: var(--muted); font-size: .9rem; margin-bottom: 1rem; }
+    .sample-section { margin-top: 1.25rem; }
+    button, input, select { font: inherit; }
+    button { min-height: 2.25rem; padding: .35rem .7rem; border: 1px solid #aebbc4; border-radius: 4px; background: #fff; color: var(--blue); font-weight: 600; font-size: .875rem; cursor: pointer; white-space: nowrap; }
+    button:hover:not(:disabled) { background: var(--soft); }
+    button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+    button.primary:hover { background: var(--blue-hover); }
+    button:disabled { color: #6e7880; background: var(--soft); cursor: default; }
+    :is(button, input, select, [tabindex]):focus-visible { outline: 2px solid #236996; outline-offset: 2px; }
+    input, select { width: 100%; min-height: 2.25rem; padding: .3rem .45rem; border: 1px solid #aebbc4; border-radius: 4px; background: #fff; color: var(--ink); font-size: .875rem; }
+    select {
+      appearance: none;
+      padding-right: 1.65rem;
+      background: linear-gradient(45deg, transparent 50%, #52616c 50%) right .75rem center / .27rem .27rem no-repeat,
+        linear-gradient(135deg, #52616c 50%, transparent 50%) right .48rem center / .27rem .27rem no-repeat, #fff;
+    }
+    input[aria-invalid="true"] { border-color: #96392c; box-shadow: inset 0 0 0 1px #96392c; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: .875rem; }
+    th, td { padding: .5rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    thead th { color: #3d4a54; background: var(--soft); white-space: nowrap; }
+    tbody th { font-weight: 650; }
+    .rule-table th, .rule-table td { padding: .5rem .3rem; }
+    .rule-table :is(th, td):first-child { padding-left: .5rem; }
+    .rule-table td:last-child { padding-right: .5rem; }
+    .cidr { min-width: 7.5rem; }
+    .port { min-width: 4rem; }
+    .rule-table [data-field="action"] { min-width: 4.9rem; }
+    .rule-table [data-field="protocol"] { min-width: 4.25rem; }
+    .row-actions { display: flex; flex-wrap: wrap; gap: .25rem; min-width: 8.65rem; }
+    .row-actions button { min-height: 1.85rem; padding: .16rem .36rem; font-size: .8rem; }
+    .row-actions [data-action="remove"] { color: #84372a; }
+    .table-scroll { overflow-x: auto; }
+    .rule-table { min-width: 41.5rem; }
+    .empty { color: var(--muted); padding-block: .85rem !important; }
+    .packet-fields { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin-bottom: .85rem; }
+    label { display: block; font-size: .875rem; font-weight: 600; }
+    label :is(input, select) { margin-top: .22rem; font-weight: 400; }
+    .feedback { margin: .7rem 0 0; color: #84372a; font-size: .875rem; }
+    .feedback:empty { display: none; }
+    .decision { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: .8rem; }
+    .verdict { margin-bottom: .35rem; display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; font-size: .9rem; }
+    .result-label { font-weight: 700; border-radius: 3px; padding: .12rem .4rem; }
+    .allow { color: #215437; background: #e5f2e9; }
+    .deny { color: #84372a; background: #f8eae5; }
+    .trace { margin: .6rem 0 0; }
+    .trace summary { color: var(--blue); cursor: pointer; font-size: .9rem; font-weight: 600; }
+    .trace ol { padding-left: 1.35rem; margin: .45rem 0 0; color: var(--muted); font-size: .875rem; }
+    .trace li + li { margin-top: .3rem; }
+    .sample-table { min-width: 42rem; }
+    .sample-table tbody tr:last-child > * { border-bottom: 0; }
+    .sample-table button { min-height: 1.9rem; padding: .2rem .55rem; }
+    .address { font-family: ui-monospace, Consolas, monospace; white-space: nowrap; }
+    .sample-result { font-weight: 600; }
+    .sample-result[data-state="pass"] { color: #215437; }
+    .sample-result[data-state="changed"] { color: #84372a; }
+    [hidden] { display: none !important; }
+    @media (max-width: 67rem) { .workspace { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 40rem) {
+      .wrap { width: calc(100% - 1.25rem); }
+      .page-header { padding-block: 1rem; }
+      .header-inner { align-items: flex-start; flex-direction: column; gap: .65rem; }
+      main { padding-top: .8rem; }
+      section { padding: .8rem; }
+      .workspace { gap: .8rem; }
+      .sample-section { margin-top: .8rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="wrap header-inner">
+      <div>
+        <h1>Firewall Rule Engine</h1>
+        <p>Offline simulator for IPv4 packet filtering.</p>
+      </div>
+      <button id="reset" type="button">Reset demo</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="workspace">
+      <section aria-labelledby="rules-heading">
+        <div class="section-heading">
+          <h2 id="rules-heading">Rule order</h2>
+          <button id="add-rule" type="button">Add rule</button>
+        </div>
+        <p class="help" id="rule-help">Rules run from top to bottom. The first match wins. If no rule matches, the engine denies the packet.</p>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Editable firewall rules">
+          <table class="rule-table" aria-describedby="rule-help">
+            <thead><tr><th scope="col">ID</th><th scope="col">Action</th><th scope="col">Source CIDR</th><th scope="col">Destination CIDR</th><th scope="col">Protocol</th><th scope="col">Port</th><th scope="col">Edit order</th></tr></thead>
+            <tbody id="rule-rows"></tbody>
+          </table>
+        </div>
+        <p id="rule-error" class="feedback" role="status"></p>
+      </section>
+
+      <section aria-labelledby="packet-heading">
+        <div class="section-heading"><h2 id="packet-heading">Test a packet</h2></div>
+        <form id="packet-form" novalidate>
+          <div class="packet-fields">
+            <label>Source IP<input name="source" value="10.0.1.25" spellcheck="false" autocomplete="off"></label>
+            <label>Destination IP<input name="destination" value="192.0.2.10" spellcheck="false" autocomplete="off"></label>
+            <label>Protocol<select name="protocol"><option>TCP</option><option>UDP</option></select></label>
+            <label>Destination port<input name="port" value="443" inputmode="numeric" autocomplete="off"></label>
+          </div>
+          <button class="primary" type="submit">Evaluate packet</button>
+        </form>
+        <p class="feedback" id="packet-error" role="status"></p>
+        <div class="decision">
+          <h3>Decision</h3>
+          <p id="verdict" class="verdict" role="status">Evaluate a packet to see the result.</p>
+          <details class="trace" id="trace" hidden>
+            <summary>Rule checks</summary>
+            <ol id="trace-rows"></ol>
+          </details>
+        </div>
+      </section>
+    </div>
+
+    <section class="sample-section" aria-labelledby="samples-heading">
+      <div class="section-heading">
+        <h2 id="samples-heading">Sample packets</h2>
+        <button id="run-samples" type="button">Run all samples</button>
+      </div>
+      <p class="help">Expected results use the original rule order. Run the samples after an edit to see which decisions change.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Sample packet test cases">
+        <table class="sample-table">
+          <thead><tr><th scope="col">Case</th><th scope="col">Source IP</th><th scope="col">Destination IP</th><th scope="col">Protocol / port</th><th scope="col">Expected</th><th scope="col">Actual</th><th scope="col">Packet</th></tr></thead>
+          <tbody id="sample-rows"></tbody>
+        </table>
+      </div>
+      <p class="help" id="sample-summary" role="status" hidden></p>
+    </section>
+    <noscript><p>Enable JavaScript to run the simulator.</p></noscript>
+  </main>
+
+  <template id="rule-template">
+    <tr>
+      <th scope="row" data-rule-id></th>
+      <td><select data-field="action"><option>ALLOW</option><option>DENY</option></select></td>
+      <td><input class="cidr address" data-field="source" autocomplete="off" spellcheck="false"></td>
+      <td><input class="cidr address" data-field="destination" autocomplete="off" spellcheck="false"></td>
+      <td><select data-field="protocol"><option>TCP</option><option>UDP</option></select></td>
+      <td><input class="port" data-field="port" inputmode="numeric" autocomplete="off"></td>
+      <td><div class="row-actions"><button type="button" data-action="up">Up</button><button type="button" data-action="down">Down</button><button type="button" data-action="remove">Remove</button></div></td>
+    </tr>
+  </template>
+
+  <script id="rule-engine">
+    const originalRules = [
+      { id: 'R1', action: 'DENY', source: '10.0.1.0/24', destination: '192.0.2.10/32', protocol: 'TCP', port: '443' },
+      { id: 'R2', action: 'ALLOW', source: '10.0.0.0/8', destination: '192.0.2.10/32', protocol: 'TCP', port: '443' },
+      { id: 'R3', action: 'ALLOW', source: '10.0.0.0/8', destination: '192.0.2.10/32', protocol: 'UDP', port: '53' },
+    ];
+
+    const samples = [
+      { name: 'Overlapping rules', source: '10.0.1.25', destination: '192.0.2.10', protocol: 'TCP', port: '443', expected: 'DENY (R1)' },
+      { name: 'HTTPS allowed', source: '10.0.2.25', destination: '192.0.2.10', protocol: 'TCP', port: '443', expected: 'ALLOW (R2)' },
+      { name: 'UDP allowed', source: '10.0.2.25', destination: '192.0.2.10', protocol: 'UDP', port: '53', expected: 'ALLOW (R3)' },
+      { name: 'Protocol mismatch', source: '10.0.2.25', destination: '192.0.2.10', protocol: 'TCP', port: '53', expected: 'DENY (DEFAULT)' },
+      { name: 'Different host', source: '10.0.2.25', destination: '192.0.2.11', protocol: 'TCP', port: '443', expected: 'DENY (DEFAULT)' },
+      { name: 'Invalid port', source: '10.0.2.25', destination: '192.0.2.10', protocol: 'TCP', port: '70000', expected: 'Input error' },
+    ];
+
+    function parseIp(value) {
+      const octets = value.trim().split('.');
+      if (octets.length !== 4 || octets.some(octet => !/^(0|[1-9]\d{0,2})$/.test(octet) || Number(octet) > 255)) {
+        return null;
+      }
+      return octets.reduce((address, octet) => address * 256 + Number(octet), 0);
+    }
+
+    function parseCidr(value) {
+      const parts = value.trim().split('/');
+      if (parts.length !== 2 || parts[0] !== parts[0].trim() || !/^(0|[1-9]\d?)$/.test(parts[1])) return null;
+      const address = parseIp(parts[0]);
+      const prefix = Number(parts[1]);
+      if (address === null || prefix > 32) return null;
+      const size = 2 ** (32 - prefix);
+      if (address % size !== 0) return null;
+      return { start: address, end: address + size - 1 };
+    }
+
+    function parsePort(value) {
+      const trimmed = value.trim();
+      const port = Number(trimmed);
+      return /^\d{1,5}$/.test(trimmed) && port >= 1 && port <= 65535 ? port : null;
+    }
+
+    function compileRules(rules) {
+      const entries = [];
+      for (const rule of rules) {
+        const source = parseCidr(rule.source);
+        const destination = parseCidr(rule.destination);
+        const port = parsePort(rule.port);
+        const cidrHelp = 'Enter a valid network in CIDR notation with its host bits set to zero.';
+        if (source === null) return { error: { id: rule.id, field: 'source', message: `Source CIDR. ${cidrHelp}` } };
+        if (destination === null) return { error: { id: rule.id, field: 'destination', message: `Destination CIDR. ${cidrHelp}` } };
+        if (port === null) return { error: { id: rule.id, field: 'port', message: 'Enter a destination port from 1 to 65535.' } };
+        entries.push({ ...rule, source, destination, port });
+      }
+      return { entries };
+    }
+
+    function evaluate(packet, entries) {
+      const source = parseIp(packet.source);
+      const destination = parseIp(packet.destination);
+      const port = parsePort(packet.port);
+      if (source === null) return { error: 'Enter a valid source IPv4 address.', field: 'source' };
+      if (destination === null) return { error: 'Enter a valid destination IPv4 address.', field: 'destination' };
+      if (port === null) return { error: 'Enter a destination port from 1 to 65535.', field: 'port' };
+
+      const trace = [];
+      for (const rule of entries) {
+        const mismatches = [];
+        if (source < rule.source.start || source > rule.source.end) mismatches.push('source IP');
+        if (destination < rule.destination.start || destination > rule.destination.end) mismatches.push('destination IP');
+        if (packet.protocol !== rule.protocol) mismatches.push('protocol');
+        if (port !== rule.port) mismatches.push('destination port');
+        if (mismatches.length === 0) {
+          trace.push(`${rule.id} matched. Applied ${rule.action}.`);
+          return { action: rule.action, id: rule.id, trace };
+        }
+        trace.push(`${rule.id} did not match (${mismatches.join(', ')}).`);
+      }
+      trace.push('No rule matched. Applied default deny.');
+      return { action: 'DENY', id: 'DEFAULT', trace };
+    }
+  </script>
+
+  <script>
+    const ruleRows = document.querySelector('#rule-rows');
+    const ruleTemplate = document.querySelector('#rule-template');
+    const ruleError = document.querySelector('#rule-error');
+    const addRule = document.querySelector('#add-rule');
+    const packetForm = document.querySelector('#packet-form');
+    const packetError = document.querySelector('#packet-error');
+    const verdict = document.querySelector('#verdict');
+    const trace = document.querySelector('#trace');
+    const traceRows = document.querySelector('#trace-rows');
+    const sampleRows = document.querySelector('#sample-rows');
+    const sampleSummary = document.querySelector('#sample-summary');
+    const ruleLabels = { action: 'action', source: 'source CIDR', destination: 'destination CIDR', protocol: 'protocol', port: 'destination port' };
+    let rules = [];
+    let nextRuleId = 4;
+
+    function renderRules() {
+      ruleRows.replaceChildren();
+      rules.forEach((rule, index) => {
+        const row = ruleTemplate.content.firstElementChild.cloneNode(true);
+        row.dataset.rule = rule.id;
+        row.querySelector('[data-rule-id]').textContent = rule.id;
+        for (const control of row.querySelectorAll('[data-field]')) {
+          const field = control.dataset.field;
+          control.value = rule[field];
+          control.setAttribute('aria-label', `${rule.id} ${ruleLabels[field]}`);
+        }
+        for (const button of row.querySelectorAll('[data-action]')) {
+          const action = button.dataset.action;
+          button.setAttribute('aria-label', action === 'remove' ? `Remove ${rule.id}` : `Move ${rule.id} ${action}`);
+          button.disabled = (action === 'up' && index === 0) || (action === 'down' && index === rules.length - 1);
+        }
+        ruleRows.append(row);
+      });
+      if (rules.length === 0) {
+        const cell = ruleRows.insertRow().insertCell();
+        cell.colSpan = 7;
+        cell.className = 'empty';
+        cell.textContent = 'No rules. All valid packets receive the default deny decision.';
+      }
+    }
+
+    function clearRuleError() {
+      ruleRows.querySelector('[aria-invalid]')?.removeAttribute('aria-invalid');
+      ruleError.textContent = '';
+    }
+
+    function readRules(focusInvalid) {
+      clearRuleError();
+      const { entries, error } = compileRules(rules);
+      if (error) {
+        const control = ruleRows.querySelector(`[data-rule="${error.id}"] [data-field="${error.field}"]`);
+        control.setAttribute('aria-invalid', 'true');
+        ruleError.textContent = `${error.id} ${error.message}`;
+        if (focusInvalid) control.focus();
+      }
+      return entries;
+    }
+
+    function clearPacketDecision(message = 'Evaluate a packet to see the result.') {
+      packetForm.querySelector('[aria-invalid]')?.removeAttribute('aria-invalid');
+      packetError.textContent = '';
+      verdict.textContent = message;
+      trace.hidden = true;
+      trace.open = false;
+      traceRows.replaceChildren();
+    }
+
+    function showDecision(focusInvalid) {
+      clearPacketDecision();
+      const entries = readRules(focusInvalid);
+      if (!entries) {
+        verdict.textContent = 'Fix the rule error before evaluating packets.';
+        return;
+      }
+
+      const result = evaluate(Object.fromEntries(new FormData(packetForm)), entries);
+      if (result.error) {
+        const control = packetForm.elements.namedItem(result.field);
+        control.setAttribute('aria-invalid', 'true');
+        verdict.textContent = 'Input error';
+        packetError.textContent = result.error;
+        if (focusInvalid) control.focus();
+        return;
+      }
+
+      const label = document.createElement('strong');
+      label.className = `result-label ${result.action.toLowerCase()}`;
+      label.textContent = result.action;
+      const reason = result.id === 'DEFAULT' ? 'Default policy' : `Matched ${result.id}`;
+      verdict.replaceChildren(label, document.createTextNode(reason));
+      for (const check of result.trace) {
+        const entry = document.createElement('li');
+        entry.textContent = check;
+        traceRows.append(entry);
+      }
+      trace.hidden = false;
+    }
+
+    function renderSamples() {
+      samples.forEach((sample, index) => {
+        const row = sampleRows.insertRow();
+        const heading = document.createElement('th');
+        heading.scope = 'row';
+        heading.textContent = sample.name;
+        row.append(heading);
+
+        [sample.source, sample.destination, `${sample.protocol} / ${sample.port}`, sample.expected].forEach((value, column) => {
+          const cell = row.insertCell();
+          if (column < 2) cell.className = 'address';
+          cell.textContent = value;
+        });
+        row.insertCell().className = 'sample-result';
+
+        const load = document.createElement('button');
+        load.type = 'button';
+        load.textContent = 'Load';
+        load.dataset.sample = index;
+        load.setAttribute('aria-label', `Load ${sample.name.toLowerCase()} sample`);
+        row.insertCell().append(load);
+      });
+      clearSampleResults();
+    }
+
+    function clearSampleResults() {
+      for (const cell of sampleRows.querySelectorAll('.sample-result')) {
+        cell.textContent = 'Not run';
+        delete cell.dataset.state;
+      }
+      sampleSummary.hidden = true;
+      sampleSummary.textContent = '';
+    }
+
+    function loadPacket(sample) {
+      for (const field of ['source', 'destination', 'protocol', 'port']) {
+        packetForm.elements.namedItem(field).value = sample[field];
+      }
+    }
+
+    function ruleChanged() {
+      clearRuleError();
+      clearPacketDecision('Rules changed. Evaluate the packet again.');
+      clearSampleResults();
+    }
+
+    ruleRows.addEventListener('input', event => {
+      const control = event.target.closest('[data-field]');
+      if (!control) return;
+      const rule = rules.find(entry => entry.id === control.closest('tr').dataset.rule);
+      rule[control.dataset.field] = control.value;
+      ruleChanged();
+    });
+
+    ruleRows.addEventListener('click', event => {
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+      const action = button.dataset.action;
+      const id = button.closest('tr').dataset.rule;
+      const index = rules.findIndex(entry => entry.id === id);
+      const [rule] = rules.splice(index, 1);
+      if (action !== 'remove') rules.splice(index + (action === 'up' ? -1 : 1), 0, rule);
+      renderRules();
+      ruleChanged();
+
+      const focusRule = action === 'remove' ? rules[Math.min(index, rules.length - 1)]?.id : id;
+      const row = ruleRows.querySelector(`[data-rule="${focusRule}"]`);
+      const nextButton = row?.querySelector(`[data-action="${action}"]:not(:disabled)`) ?? row?.querySelector('button:not(:disabled)') ?? addRule;
+      nextButton.focus();
+    });
+
+    addRule.addEventListener('click', () => {
+      const id = `R${nextRuleId++}`;
+      rules.push({ id, action: 'DENY', source: '0.0.0.0/0', destination: '0.0.0.0/0', protocol: 'TCP', port: '443' });
+      renderRules();
+      ruleChanged();
+      ruleRows.querySelector(`[data-rule="${id}"] [data-field="source"]`).focus();
+    });
+
+    packetForm.addEventListener('input', () => clearPacketDecision());
+    packetForm.addEventListener('submit', event => {
+      event.preventDefault();
+      showDecision(true);
+    });
+
+    sampleRows.addEventListener('click', event => {
+      const button = event.target.closest('[data-sample]');
+      if (!button) return;
+      loadPacket(samples[Number(button.dataset.sample)]);
+      clearPacketDecision('Sample loaded. Choose Evaluate packet to test it.');
+      packetForm.elements.namedItem('source').focus();
+    });
+
+    document.querySelector('#run-samples').addEventListener('click', () => {
+      clearSampleResults();
+      const entries = readRules(true);
+      if (!entries) return;
+
+      let passing = 0;
+      samples.forEach((sample, index) => {
+        const result = evaluate(sample, entries);
+        const label = result.error ? 'Input error' : `${result.action} (${result.id})`;
+        const matches = label === sample.expected;
+        const cell = sampleRows.rows[index].querySelector('.sample-result');
+        cell.textContent = label;
+        cell.dataset.state = matches ? 'pass' : 'changed';
+        if (matches) passing++;
+      });
+      sampleSummary.hidden = false;
+      sampleSummary.textContent = `${passing} of ${samples.length} results match the original rule set.`;
+    });
+
+    function resetDemo() {
+      rules = originalRules.map(rule => ({ ...rule }));
+      nextRuleId = 4;
+      renderRules();
+      clearSampleResults();
+      loadPacket(samples[0]);
+      showDecision(false);
+    }
+
+    document.querySelector('#reset').addEventListener('click', resetDemo);
+    renderSamples();
+    resetDemo();
+  </script>
+</body>
+</html>
